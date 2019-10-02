@@ -1,27 +1,38 @@
+import csv
 import requests
-from requests.exceptions import HTTPError
-from bs4 import BeautifulSoup
 
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                  ' AppleWebKit/537.36 (KHTML, like Gecko) C'
-                  'hrome/77.0.3865.90 Safari/537.36',
-}
+NAME_OF_LIST = 'global2000'
+YEAR = '2019'
+LIMIT = 2000
+FILE_NAME = f"{NAME_OF_LIST}_{YEAR}.csv"
+col_names = [
+ 'uri',
+ 'description',
+ 'rank',
+ 'organizationName',
+ 'industry',
+ 'country',
+ 'revenue',
+ 'profits',
+ 'assets',
+ 'marketValue',
+ 'employees',
+ 'ceoName',
+ 'ceoTitle',
+ 'city',
+ 'yearFounded',
+ 'webSite']
 
-for url in ['https://www.forbes.com/global2000/list/1/#tab:overall']:
-    try:
-        response = requests.get(url, headers=headers)
 
-        # If the response was successful, no Exception will be raised
-        response.raise_for_status()
+raw_ref = f'https://www.forbes.com/forbesapi/org/{NAME_OF_LIST}/{YEAR}/position/true.json?limit={LIMIT}'
+res = requests.get(raw_ref).json()['organizationList']['organizationsLists']
 
-    except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
-    except Exception as err:
-        print(f'Other error occurred: {err}')
-    else:
-        content = response.content
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-    print(soup.prettify())
+with open(FILE_NAME, 'w', newline='', encoding='utf-8') as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames=col_names, delimiter=';')
+    writer.writeheader()
+    for company in res:
+        cur_list = []
+        for name in col_names:
+            cur_list.append(company.get(name))
+        writer.writerow(dict(zip(col_names, cur_list)))
